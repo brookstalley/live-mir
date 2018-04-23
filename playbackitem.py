@@ -10,7 +10,7 @@
 """
 
 import logging
-log = logging.getLogger("audiosc." + __name__)
+log = logging.getLogger("live-mir." + __name__)
 
 import asyncio
 

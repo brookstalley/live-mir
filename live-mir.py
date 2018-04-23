@@ -31,7 +31,7 @@ reader, writer = None, None
 from enum import Enum
 
 import logging
-log = logging.getLogger("audiosc")
+log = logging.getLogger("live-mir")
 
 # define any hook functions here
 def my_cleanup_hook(app):
@@ -44,15 +44,15 @@ class PlaybackState(Enum):
     PAUSED = 2
           
 #configuration defaults
-defaults = init_defaults('audiosc')
-defaults['audiosc']['metadata_address'] = '239.255.10.2'          
-defaults['audiosc']['metadata_port'] = '5555'    
-defaults['audiosc']['osc_target'] = '239.255.10.2'          
-defaults['audiosc']['osc_port'] = '5555'    
+defaults = init_defaults('live-mir')
+defaults['live-mir']['metadata_address'] = '239.255.10.2'          
+defaults['live-mir']['metadata_port'] = '5555'    
+defaults['live-mir']['osc_target'] = '239.255.10.2'          
+defaults['live-mir']['osc_port'] = '5555'    
  
-defaults['audiosc']['debug'] = False
-defaults['audiosc']['musicbrainz_server'] = ''
-defaults['audiosc']['acousticbrainz_server'] = ''
+defaults['live-mir']['debug'] = False
+defaults['live-mir']['musicbrainz_server'] = ''
+defaults['live-mir']['acousticbrainz_server'] = ''
 
 async def stdio(loop=None):
     if loop is None:
@@ -102,8 +102,8 @@ def setup_logging(app):
 def setup_osc(app): 
     #osc_startup(logger = log)
     osc_startup()
-    log.debug("Starting OSC for target={}, port={}".format(app.config.get("audiosc", "osc_target"), app.config.get("audiosc", "osc_port")))
-    osc_udp_client(app.config.get("audiosc", "osc_target"), app.config.get("audiosc", "osc_port"), "lightjams")
+    log.debug("Starting OSC for target={}, port={}".format(app.config.get("live-mir", "osc_target"), app.config.get("live-mir", "osc_port")))
+    osc_udp_client(app.config.get("live-mir", "osc_target"), app.config.get("live-mir", "osc_port"), "lightjams")
 
 def setup(app):
     setup_logging(app)
@@ -127,16 +127,16 @@ class BaseController(CementBaseController):
         self.next_item_task = None
         self.rtsp_sync = RtspSync(44100, self.loop)
         
-        self.set_preschedule_s(int(app.config.get("audiosc", "preschedule_ms"))/1000)        
+        self.set_preschedule_s(int(app.config.get("live-mir", "preschedule_ms"))/1000)        
         
-        self.acoustic_brainz = Acousticbrainz(self.aiohttp_session, app.config.get("audiosc", "acousticbrainz_server"), self.loop)
+        self.acoustic_brainz = Acousticbrainz(self.aiohttp_session, app.config.get("live-mir", "acousticbrainz_server"), self.loop)
         self.metadata_parser = MetadataParser()
         
         self.playback_state = PlaybackState.STOPPED
         
         self.metadataReceiver = MetadataListener(queueSize = 20)
-        self.metadataReceiver.bind_socket (app.config.get("audiosc", "metadata_address")
-                , int(app.config.get("audiosc", "metadata_port"))
+        self.metadataReceiver.bind_socket (app.config.get("live-mir", "metadata_address")
+                , int(app.config.get("live-mir", "metadata_port"))
                 , socket.INADDR_ANY)
                 
         self.loop.run_until_complete(self.metadataReceiver.start_listener())

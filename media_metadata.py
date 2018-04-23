@@ -1,5 +1,5 @@
 import logging
-log = logging.getLogger("audiosc." + __name__)
+log = logging.getLogger("live-mir." + __name__)
 
 import musicbrainzngs
 
@@ -19,9 +19,9 @@ class Metadata(object):
         self.fields = {}
         self.aiohttp_session = aiohttp_session
         self.app = app
-        musicbrainzngs.set_useragent(app.config.get("audiosc", "brainz_app")
-                ,app.config.get("audiosc", "brainz_ver")
-                ,app.config.get("audiosc", "brainz_contact"))        
+        musicbrainzngs.set_useragent(app.config.get("live-mir", "brainz_app")
+                ,app.config.get("live-mir", "brainz_ver")
+                ,app.config.get("live-mir", "brainz_contact"))        
     
     def set_field(self, field_name, field_value):
         self.fields[field_name] = field_value

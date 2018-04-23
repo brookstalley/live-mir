@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 import logging
-log = logging.getLogger("audiosc." + __name__)
+log = logging.getLogger("live-mir." + __name__)
 
 class SyncError(Exception):
     def __init__(self, message):
