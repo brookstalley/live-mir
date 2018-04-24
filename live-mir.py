@@ -241,18 +241,21 @@ class BaseController(CementBaseController):
             command = await async_input("Command: ")
             print("Got command {}".format(command))
             self.on_command(command)
+            
+    def display_status(self):
+        print("Preschedule: {}ms".format(self.preschedule_s * 1000))
     
     def on_command(self,command):
-        if command == "a":
-            self.set_preschedule_s(self.preschedule_s - 5/1000)
-            
-        elif command == "s":
+        if command == "preschedule -5":
+            self.set_preschedule_s(self.preschedule_s - 5/1000)           
+        elif command == "preschedule +5":
             self.set_preschedule_s(self.preschedule_s + 5/1000)
+        elif command == "status":
+            self.display_status()
         elif command == "quit":
             print("Shutting down...")
             self.quitting = True
             self.loop.create_task(self.shutdown())
-            
         else:
             print("Unknown command '{}'".format(command))
 
