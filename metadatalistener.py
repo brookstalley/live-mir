@@ -11,6 +11,9 @@ class MetadataListenerProtocol(object):
     def connection_made (self, transport):
         self.listener.transport = transport
         
+    def connection_lost (self, transport):
+        pass
+        
     def datagram_received (self, data, addr):
         #log.debug('Received {!r} from {!r}'.format(data, addr))
         self.listener.add_datagram(data)
@@ -28,7 +31,7 @@ class MetadataListener:
             #log.debug("Added. Queue depth = %s" % self.queue.qsize())
         except asyncio.QueueFull:
             log.warning ("Queue full, dropping datagram")
-        
+           
     async def receive(self):
         data = await self.queue.get()
         return data
@@ -56,6 +59,7 @@ class MetadataListener:
     def stop (self):
         self.transport.close()
         self.socket.close()
+        self.queue.put_nowait(b"exiting")
 
     async def start_listener (self):
         loop = asyncio.get_event_loop()

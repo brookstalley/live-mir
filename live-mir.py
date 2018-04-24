@@ -117,7 +117,7 @@ class BaseController(CementBaseController):
     @expose(hide=True)
     def default(self):
         self.app = app
-
+        self.quitting = False
         self.loop = asyncio.get_event_loop()
         self.aiohttp_session = aiohttp.ClientSession(loop = self.loop)
 
@@ -140,20 +140,29 @@ class BaseController(CementBaseController):
                 , socket.INADDR_ANY)
                 
         self.loop.run_until_complete(self.metadataReceiver.start_listener())
-        self.loop.create_task(self.command_loop())
-        self.loop.run_until_complete(self.metadata_loop())
+        self.loop.run_until_complete(self.main()) 
+        self.loop.close()        
 
-        
+   
+    async def main(self):
+        nodes = [
+            self.loop.create_task(self.metadata_loop()),
+            self.loop.create_task(self.command_loop())
+        ]        
+        await asyncio.gather(*nodes)
+
+    
     def set_preschedule_s(self, seconds):
         log.debug("Setting preschedule to {} ms".format(seconds * 1000))
         self.preschedule_s = seconds
      
-    def shutdown(self):
+    async def shutdown(self):
         if (self.next_item_task):
             self.next_item_task.cancel()
 
         osc_terminate()
         self.metadataReceiver.stop()
+        await self.aiohttp_session.close()
   
     async def test_sequence_end(self):
         log.debug("Sequence ended")
@@ -213,20 +222,22 @@ class BaseController(CementBaseController):
         
               
     async def metadata_loop(self):
-        while True:
+        while not self.quitting:
             data = await(self.metadataReceiver.receive())
-            item = self.metadata_parser.ParseItem(data)
+            # This is a really ugly hack but it works
+            if (data != b"exiting"):
+                item = self.metadata_parser.ParseItem(data)
 
-            if (item is None):
-                log.warning(self,"Could not get valid metadata item for {}".format(data))
-            else:
-                ### This could be anything from info about the next song
-                ### to notification that we have skipped a song or changed
-                ### volume
-                await self.process_metadata(item)   
+                if (item is None):
+                    log.warning(self,"Could not get valid metadata item for {}".format(data))
+                else:
+                    ### This could be anything from info about the next song
+                    ### to notification that we have skipped a song or changed
+                    ### volume
+                    await self.process_metadata(item)   
                 
     async def command_loop(self):
-        while True:
+        while not self.quitting:
             command = await async_input("Command: ")
             print("Got command {}".format(command))
             self.on_command(command)
@@ -237,6 +248,10 @@ class BaseController(CementBaseController):
             
         elif command == "s":
             self.set_preschedule_s(self.preschedule_s + 5/1000)
+        elif command == "quit":
+            print("Shutting down...")
+            self.quitting = True
+            self.loop.create_task(self.shutdown())
             
         else:
             print("Unknown command '{}'".format(command))
@@ -319,8 +334,6 @@ class LiveMirApp(CementApp):
         ]
         base_controller = BaseController
         
-    def shutdown(self):
-        log.warning("LiveMirApp exiting")
                 
 with LiveMirApp() as app:
     # add arguments to the parser
@@ -350,9 +363,7 @@ with LiveMirApp() as app:
     log.debug("Starting Shairport Sync OSC")
     
     # run the application
-    try:
-        app.run()
-    except CaughtSignal as e:
-        app.shutdown()    
+    app.run()
+ 
 
     app.close()
