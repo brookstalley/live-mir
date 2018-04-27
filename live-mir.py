@@ -246,9 +246,18 @@ class BaseController(CementBaseController):
         print("Preschedule: {}ms".format(self.preschedule_s * 1000))
     
     def on_command(self,command):
-        if command == "preschedule -5":
+        command_help = {"sync" : "Adjust timing of output messages. Syntax: sync +5 | -5",
+                    "status" : "Print current status",
+                    "quit" : "Exit program"
+                    }
+        if command == "help":
+            print("Commands:")
+            for command,text in command_help.items():
+                print("{}\t\t\t{}".format(command,text))
+            
+        elif command == "sync -5":
             self.set_preschedule_s(self.preschedule_s - 5/1000)           
-        elif command == "preschedule +5":
+        elif command == "sync +5":
             self.set_preschedule_s(self.preschedule_s + 5/1000)
         elif command == "status":
             self.display_status()
@@ -256,6 +265,8 @@ class BaseController(CementBaseController):
             print("Shutting down...")
             self.quitting = True
             self.loop.create_task(self.shutdown())
+        elif command == "":
+            pass # No op, but give another command prompt
         else:
             print("Unknown command '{}'".format(command))
 
