@@ -238,12 +238,21 @@ class BaseController(CementBaseController):
                 
     async def command_loop(self):
         while not self.quitting:
-            command = await async_input("Command: ")
-            print("Got command {}".format(command))
+            command = await async_input("\nCommand: ")
             self.on_command(command)
             
     def display_status(self):
         print("Preschedule: {}ms".format(self.preschedule_s * 1000))
+        try: 
+            if self.current_item and self.current_item is not None:
+                print("Playing {}".format(self.current_item.recording.summary["title"]))
+                if self.current_item.recording.detail is not None:
+                    detail = self.current_item.recording.detail
+                    print("\tKey: {} {}".format(detail["tonal"]["key_key"], detail["tonal"]["key_scale"]))
+        except (AttributeError):
+            print("No song playing, or no metadata yet")
+            
+                
     
     def on_command(self,command):
         command_help = {"sync" : "Adjust timing of output messages. Syntax: sync +5 | -5",
